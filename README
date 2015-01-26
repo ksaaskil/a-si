@@ -1,9 +1,7 @@
 
-The files for the amorphous silicon project.
+The files for the amorphous silicon project. Files with *.xyz include the coordinates after the melt-quench and minimization, *dat files contain silicon atoms at random positions (initial coordinates for the melt-quench). The atom numbers and volumes correspond to the density 2.291 g/cm^3 for Si-28.
 
-171114b: system size 40x5x5 nm^3
-171114c: size 50x5x5 nm^3
-
-201114a: system 20x5x5 nm^3
-211114a: system 83x5x5 nm^3
-211114b: system 108x5x5 nm^3
+171114b: system size 40x5x5 nm^3, 49290 atoms
+201114a: system 20x5x5 nm^3, 24645 atoms
+211114a: system 83x5x5 nm^3, 102277 atoms
+211114b: system 108x5x5 nm^3, 133083 atoms
