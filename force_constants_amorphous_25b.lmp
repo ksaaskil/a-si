@@ -1,0 +1,157 @@
+
+# variable file string 020215c
+
+variable filetowrite string ${file}.Fij.dat
+
+atom_modify map hash
+read_restart ${file}.quenched.restart remap
+
+#neighbor 0.25 bin
+
+pair_style sw
+#pair_style rebo # 3.0
+pair_coeff * * Si_vbwm.sw Si
+# pair_coeff * * Si.sw Si
+
+# Define region for left interface
+
+# Define the group of atoms in the region (for force calculation)
+
+# variable xi equal x[1]
+variable dmid equal 3
+variable xmid equal (xhi+xlo)/2.0
+variable xmidlo equal ${xmid}-${dmid}
+variable xmidhi equal ${xmid}+${dmid}
+
+region left block ${xmidlo} ${xmid} INF INF INF INF
+region right block ${xmid} ${xmidhi} INF INF INF INF
+
+group interface_left region left
+group interface_right region right
+
+# Belongs to left interface
+# variable boolleft equal (${xi}<${xmid})&&(${xi}>${xmidlo})
+# Belongs to right interface
+# variable boolright equal (${xi}>${xmid})&&(${xi}<${xmidhi})
+
+print 'The interface is at ${xmidlo}, ${xmid}, ${xmidhi}'
+
+group interface union interface_left interface_right
+
+compute fxfyfz interface property/atom fx fy fz
+
+compute fxs interface property/atom fx
+compute fys interface property/atom fy
+compute fzs interface property/atom fz
+
+
+# run 0
+fix NVE all nve
+
+variable N equal "count(all)"
+variable NL equal "count(interface_left)"
+variable NR equal "count(interface_right)"
+
+# Initialize groups
+group thisi id 1
+
+variable hstep equal 0.001 # Amount of displacement
+variable hstepm2 equal -2*v_hstep
+
+shell rm ${filetowrite}
+
+dump helpdump interface custom 1 ${filetowrite} id c_fxs c_fys c_fzs	
+dump_modify helpdump sort id
+dump_modify helpdump append yes
+
+# WRITE THE INTERFACE PARTICLES IDs and TYPEs TO ${filetowrite}
+
+print "NL ${NL}" append ${filetowrite}
+print "NR ${NR}" append ${filetowrite}
+
+label loop1
+variable i1 loop $N
+	variable xi equal x[${i1}]
+	variable boolleft equal (${xi}<${xmid})&&(${xi}>${xmidlo})
+	variable boolright equal (${xi}>${xmid})&&(${xi}<${xmidhi})
+	if "${boolleft}" then &
+		"print '${i1} 6' append ${filetowrite}"
+	if "${boolright}" then &
+		"print '${i1} 7' append ${filetowrite}"
+	next i1
+jump force_constants_amorphous.lmp loop1
+
+print "HSTEP ${hstep}" append ${filetowrite}
+thermo_modify flush yes
+
+variable counter equal 0
+
+label loop_i
+
+variable i loop $N	 
+	 variable xi equal x[${i}]
+	 variable boolleft equal (${xi}<${xmid})&&(${xi}>${xmidlo})
+	 variable boolright equal (${xi}>${xmid})&&(${xi}<${xmidhi})
+	 print '$i ${boolleft} ${boolright}'
+	 if "!${boolleft}" then &
+	    "next i" &
+	    "jump force_constants_amorphous.lmp loop_i" &
+	    "jump force_constants_amorphous.lmp final_break"
+# Additional jump necessary if the previous is skipped, i.e. i>$N
+#	    Displace in x direction and calculate the forces on group	    
+
+	 group thisi delete
+	 group thisi id $i	 
+	 
+	 # X DIRECTION DISPLACEMENTS TO POSITIVE AND NEGATIVE DIRECTION
+
+	 displace_atoms thisi move ${hstep} 0 0
+	 variable counter equal ${counter}+1
+	 reset_timestep ${counter}
+	 print "counter=${counter}"
+	 run 0 # Update the forces in the compute, hopefully		
+
+	 displace_atoms thisi move ${hstepm2} 0 0
+	 variable counter equal ${counter}+1
+	 reset_timestep ${counter}
+	 print "counter=${counter}"
+	 run 0 # Update the forces in the compute, hopefully
+	 
+	 displace_atoms thisi move ${hstep} 0 0
+	 
+	 # Y DIRECTION DISPLACEMENTS TO POSITIVE AND NEGATIVE DIRECTION
+
+	 displace_atoms thisi move 0 ${hstep} 0
+	 variable counter equal ${counter}+1
+	 reset_timestep ${counter}
+	 print "counter=${counter}"
+	 run 0 # Update the forces in the compute, hopefully		
+
+	 displace_atoms thisi move 0 ${hstepm2} 0
+	 variable counter equal ${counter}+1
+	 reset_timestep ${counter}
+	 print "counter=${counter}"
+	 run 0 # Update the forces in the compute, hopefully
+	 
+	 displace_atoms thisi move 0 ${hstep} 0
+	 
+	 # Z DIRECTION DISPLACEMENTS TO POSITIVE AND NEGATIVE DIRECTION
+
+	 displace_atoms thisi move 0 0 ${hstep} 
+	 variable counter equal ${counter}+1
+	 reset_timestep ${counter}
+	 print "counter=${counter}"
+	 run 0 # Update the forces in the compute, hopefully		
+
+	 displace_atoms thisi move 0 0 ${hstepm2}
+	 variable counter equal ${counter}+1
+	 reset_timestep ${counter}
+	 print "counter=${counter}"
+	 run 0 # Update the forces in the compute, hopefully
+	 
+	 displace_atoms thisi move 0 0 ${hstep}
+
+next i
+jump force_constants_amorphous.lmp loop_i
+label final_break
+
