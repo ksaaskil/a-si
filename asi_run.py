@@ -18,7 +18,7 @@ from subprocess import call, Popen, PIPE
 def main(filePrefix):
 
 #    filePrefix='140415c'
-    quenchFileInit='quench_asi_nofilename_press.lmp'
+    quenchFileInit='quench_asi_nofilename.lmp'
     # quenchFile='quench_asi_'+filePrefix+'.lmpc'
     nemdFileInit='nemd_asi_nofilename.lmp'
     # nemdFile='nemd_asi_'+filePrefix+'.lmpc'
